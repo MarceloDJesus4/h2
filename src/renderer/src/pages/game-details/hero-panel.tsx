@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useDownload } from "@renderer/hooks";
@@ -29,7 +29,7 @@ export function HeroPanel({
   getGame,
   isGamePlaying,
 }: HeroPanelProps) {
-  const { t } = useTranslation("game_details");
+  const { t, i18n } = useTranslation("game_details");
 
   const [showBinaryNotFoundModal, setShowBinaryNotFoundModal] = useState(false);
   const [lastTimePlayed, setLastTimePlayed] = useState("");
@@ -47,27 +47,29 @@ export function HeroPanel({
   } = useDownload();
   const isGameDownloading = isDownloading && gameDownloading?.id === game?.id;
 
-  const updateLastTimePlayed = useCallback(() => {
-    setLastTimePlayed(
-      formatDistance(game.lastTimePlayed, new Date(), {
-        addSuffix: true,
-      })
-    );
-  }, [game?.lastTimePlayed, formatDistance]);
-
   useEffect(() => {
     if (game?.lastTimePlayed) {
-      updateLastTimePlayed();
-
-      const interval = setInterval(() => {
-        updateLastTimePlayed();
-      }, 1000);
-
-      return () => {
-        clearInterval(interval);
-      };
+      setLastTimePlayed(
+        formatDistance(game.lastTimePlayed, new Date(), {
+          addSuffix: true,
+        })
+      );
     }
-  }, [game?.lastTimePlayed, updateLastTimePlayed]);
+  }, [game?.lastTimePlayed, formatDistance]);
+
+  const formatPlayTime = (milliseconds: number) => {
+      const seconds = milliseconds / 1000
+      const minutes = seconds / 60
+
+      if (minutes < 120) {
+        return minutes.toFixed(0) + " " + t("minutes")
+      }
+
+      const numberFormat = new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 })
+
+      const hours = minutes / 60
+      return numberFormat.format(hours)  + " " + t("hours")
+  }
 
   const finalDownloadSize = useMemo(() => {
     if (!game) return "N/A";
@@ -136,7 +138,7 @@ export function HeroPanel({
         <>
           <p>
             {t("play_time", {
-              amount: formatDistance(0, game.playTimeInMilliseconds),
+              amount: formatPlayTime(game.playTimeInMilliseconds),
             })}
           </p>
 
